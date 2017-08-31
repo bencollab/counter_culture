@@ -28,7 +28,19 @@ module CounterCulture
         raise "Fixing counter caches is not supported when :delta_magnitude is a Proc; you may skip this relation with :skip_unsupported => true" if delta_magnitude.is_a?(Proc)
       end
 
+      options[:exclude_associated] = nil unless options[:exclude_associated] && options[:exclude_associated].is_a?(Hash)
+      options[:exclude_associated] = options[:exclude_associated] && Hash[options[:exclude_associated].map{|k,v| [Array(k), Array(v)] } ]
+
+      options[:only_associated] = nil unless options[:only_associated] && options[:only_associated].is_a?(Hash)
+      options[:only_associated] = options[:only_associated] && Hash[options[:only_associated].map{|k,v| [Array(k), Array(v)] } ]
+
       associated_model_classes.each do |associated_model_class|
+        if options[:only_associated]
+          next if options[:only_associated][counter.relation] && !options[:only_associated][counter.relation].include?(associated_model_class.name)
+        end
+        if options[:exclude_associated]
+          next if options[:exclude_associated][counter.relation] && options[:exclude_associated][counter.relation].include?(associated_model_class.name)
+        end
         Reconciliation.new(counter, changes, options, associated_model_class).perform
       end
 
